@@ -3,119 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025 最新版 - 台積電連動試算</title>
+    <title>TSMC ADR 終極連動工具</title>
     <style>
-        :root { --primary: #1a73e8; --warn: #f39c12; --danger: #d93025; }
+        :root { --primary: #1a73e8; --adr-purple: #673ab7; --warn: #f39c12; --danger: #d93025; }
         body { font-family: "PingFang TC", sans-serif; background: #f0f2f5; padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 480px; background: white; padding: 25px; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: var(--primary); margin-bottom: 10px; }
+        h2 { text-align: center; color: var(--primary); margin-bottom: 5px; }
+        .subtitle { text-align: center; font-size: 12px; color: #888; margin-bottom: 20px; }
         .update-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-bottom: 15px; }
-        .status-box { font-size: 12px; text-align: center; color: #666; margin-bottom: 20px; padding: 10px; background: #f8f9fa; border-radius: 10px; }
+        .status-box { font-size: 12px; text-align: center; color: #666; margin-bottom: 20px; padding: 10px; background: #eef3ff; border-radius: 10px; border: 1px solid #d2e3fc; }
         .card { border: 1px solid #eee; border-radius: 16px; padding: 15px; margin-bottom: 15px; position: relative; }
         .card h3 { margin: 0 0 12px 0; font-size: 16px; display: flex; align-items: center; }
-        .weight-tag { font-size: 11px; background: #fff3e0; color: #e65100; padding: 2px 8px; border-radius: 20px; margin-left: 10px; border: 1px solid #ffe0b2; }
+        .weight-tag { font-size: 11px; background: #fff3e0; color: #e65100; padding: 2px 8px; border-radius: 20px; margin-left: auto; border: 1px solid #ffe0b2; }
         .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         label { font-size: 11px; color: #888; display: block; margin-bottom: 4px; }
-        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; font-weight: bold; }
+        .adr-result { background: #f3e5f5; padding: 12px; border-radius: 12px; margin-top: 10px; border: 1px solid #d1c4e9; text-align: center; }
+        .adr-result div { font-size: 12px; color: var(--adr-purple); margin-bottom: 5px; }
+        .adr-result b { font-size: 24px; color: #4a148c; }
         .result-area { margin-top: 10px; text-align: right; border-top: 1px dashed #eee; padding-top: 10px; }
-        .target-price { color: var(--danger); font-size: 20px; font-weight: bold; }
+        .target-price { color: var(--danger); font-size: 22px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>台積電領先指標</h2>
-    <button class="update-btn" onclick="syncAll()">🔄 抓取 2025 最新即時報價</button>
-    <div id="status" class="status-box">目前使用 2025/12 預設權重值</div>
+    <h2>指標連動試算</h2>
+    <div class="subtitle">Powered by Alpha Vantage API</div>
+    
+    <button class="update-btn" onclick="syncAll()">🔄 點此更新即時股價 (全球連動)</button>
+    <div id="status" class="status-box">✅ 就緒。點擊按鈕同步最新數據</div>
+
+    <div class="card" style="border-left: 5px solid var(--adr-purple);">
+        <h3>TSM ADR (紐約證交所)</h3>
+        <div class="input-grid">
+            <div>
+                <label>ADR 價格 (USD)</label>
+                <input type="number" id="adr_p" value="190.5" step="0.1" oninput="calc()">
+            </div>
+            <div>
+                <label>美金匯率</label>
+                <input type="number" id="fx_rate" value="32.50" step="0.01" oninput="calc()">
+            </div>
+        </div>
+        <div class="adr-result">
+            <div>換算台股參考價 (ADR/5 * 匯率 * 0.8)</div>
+            <b id="adr_converted">--</b>
+        </div>
+    </div>
 
     <div class="card" style="border-left: 5px solid var(--warn);">
-        <h3>2330 台積電</h3>
+        <h3>台積電 (2330) 參數</h3>
         <div class="input-grid">
-            <div><label>現價</label><input type="number" id="tsmc_p" value="1050" oninput="calc()"></div>
-            <div><label>預計變動</label><input type="number" id="tsmc_chg" value="10" oninput="calc()"></div>
+            <div><label>當前現價</label><input type="number" id="tsmc_p" value="1050" oninput="calc()"></div>
+            <div><label>預計變動 (元)</label><input type="number" id="tsmc_chg" value="10" oninput="calc()"></div>
         </div>
     </div>
 
     <div class="card">
-        <h3>0050 元大台灣50 <span class="weight-tag" id="w0050_tag">權重: 61.5%</span></h3>
+        <h3>0050 元大台灣50 <span class="weight-tag">權重: 61.5%</span></h3>
         <div class="input-grid">
             <div><label>現價</label><input type="number" id="p0050" value="200" oninput="calc()"></div>
-            <div><label>台積電權重%</label><input type="number" id="w0050" value="61.5" step="0.1" oninput="calc()"></div>
+            <div><label>台積電權重 %</label><input type="number" id="w0050" value="61.5" step="0.1" oninput="calc()"></div>
         </div>
-        <div class="result-area">預估目標：<span id="res0050" class="target-price">--</span></div>
+        <div class="result-area">預估目標價：<span id="res0050" class="target-price">--</span></div>
     </div>
 
     <div class="card">
-        <h3>0052 富邦科技 <span class="weight-tag" id="w0052_tag">權重: 69.3%</span></h3>
+        <h3>0052 富邦科技 <span class="weight-tag">權重: 69.3%</span></h3>
         <div class="input-grid">
-            <div><label>現價 (1:5分割後)</label><input type="number" id="p0052" value="35.5" oninput="calc()"></div>
-            <div><label>台積電權重%</label><input type="number" id="w0052" value="69.3" step="0.1" oninput="calc()"></div>
+            <div><label>現價 (1:5 分割後)</label><input type="number" id="p0052" value="35.5" oninput="calc()"></div>
+            <div><label>台積電權重 %</label><input type="number" id="w0052" value="69.3" step="0.1" oninput="calc()"></div>
         </div>
-        <div class="result-area">預估目標：<span id="res0052" class="target-price">--</span></div>
+        <div class="result-area">預估目標價：<span id="res0052" class="target-price">--</span></div>
     </div>
 </div>
 
 <script>
+const ALPHA_KEY = '6S3ILAP3JCOQHT6M';
+const getPastDate = (d) => new Date(Date.now() - d * 86400000).toISOString().split('T')[0];
+
 async function syncAll() {
     const status = document.getElementById('status');
-    status.innerText = "⏳ 正在獲取最新數據...";
+    status.innerText = "⏳ 正在透過 Alpha Vantage 抓取報價...";
     
     try {
-        // 抓取價格 (使用 API)
-        const getP = async (id) => {
-            const r = await fetch(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${id}&start_date=2025-12-10`);
+        // 1. 抓取 ADR (TSM) - 使用 Alpha Vantage 全球最新報價
+        const adrUrl = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=TSM&apikey=${ALPHA_KEY}`;
+        const adrRes = await fetch(adrUrl);
+        const adrJson = await adrRes.json();
+        
+        if (adrJson["Global Quote"] && adrJson["Global Quote"]["05. price"]) {
+            document.getElementById('adr_p').value = parseFloat(adrJson["Global Quote"]["05. price"]).toFixed(2);
+        }
+
+        // 2. 抓取匯率 (使用 Alpha Vantage 匯率接口)
+        const fxUrl = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=TWD&apikey=${ALPHA_KEY}`;
+        const fxRes = await fetch(fxUrl);
+        const fxJson = await fxRes.json();
+        if (fxJson["Realtime Currency Exchange Rate"]) {
+            document.getElementById('fx_rate').value = parseFloat(fxJson["Realtime Currency Exchange Rate"]["5. Exchange Rate"]).toFixed(2);
+        }
+
+        // 3. 抓取台股 (維持 FinMind 作為台股來源，較為精準)
+        const fetchTW = async (id) => {
+            const r = await fetch(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${id}&start_date=${getPastDate(10)}`);
             const j = await r.json();
             return j.data.length ? j.data[j.data.length-1].close : null;
         };
 
-        const [pTSMC, p50, p52] = await Promise.all([getP('2330'), getP('0050'), getP('0052')]);
-
+        const [pTSMC, p50, p52] = await Promise.all([fetchTW('2330'), fetchTW('0050'), fetchTW('0052')]);
+        
         if (pTSMC) document.getElementById('tsmc_p').value = pTSMC;
         if (p50) document.getElementById('p0050').value = p50;
         if (p52) document.getElementById('p0052').value = (p52 > 100 ? p52/5 : p52).toFixed(2);
 
-        // 嘗試抓取權重 (若 API 回傳太舊，則維持預設高權重)
-        const getW = async (id) => {
-            const r = await fetch(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockHolding&data_id=${id}&start_date=2025-11-01`);
-            const j = await r.json();
-            const h = j.data.filter(x => x.stock_id === "2330").pop();
-            return h ? h.holding_percentage : null;
-        };
-
-        const [w50, w52] = await Promise.all([getW('0050'), getW('0052')]);
-        
-        // 只有當抓到的權重高於現有值時才更新 (避免抓到過時的低權重資料)
-        if (w50 && w50 > 50) {
-            document.getElementById('w0050').value = w50;
-            document.getElementById('w0050_tag').innerText = `權重: ${w50}% (API)`;
-        }
-        if (w52 && w52 > 60) {
-            document.getElementById('w0052').value = w52;
-            document.getElementById('w0052_tag').innerText = `權重: ${w52}% (API)`;
-        }
-
-        status.innerText = "✅ 數據同步完成 (" + new Date().toLocaleTimeString() + ")";
+        status.innerText = "✅ 數據同步成功 (已連動 Alpha Vantage)";
         calc();
     } catch(e) {
-        status.innerText = "❌ 網路異常，請手動輸入";
+        status.innerText = "❌ 請求失敗 (可能是 API 次數限制)";
+        console.error(e);
     }
 }
 
 function calc() {
-    const t = parseFloat(document.getElementById('tsmc_p').value) || 1;
-    const c = parseFloat(document.getElementById('tsmc_chg').value) || 0;
-    const ratio = c / t;
+    // 您的 ADR 換算公式: (ADR / 5) * 匯率 * 0.8
+    const adr = parseFloat(document.getElementById('adr_p').value) || 0;
+    const fx = parseFloat(document.getElementById('fx_rate').value) || 0;
+    const adrConv = (adr / 5) * fx * 0.8;
+    document.getElementById('adr_converted').innerText = adrConv.toFixed(2);
 
+    // ETF 目標價計算公式: 現價 * (1 + (台積電變動/台積電現價) * 權重)
+    const tsmcP = parseFloat(document.getElementById('tsmc_p').value) || 1;
+    const tsmcChg = parseFloat(document.getElementById('tsmc_chg').value) || 0;
+    const changeRatio = tsmcChg / tsmcP;
+
+    // 0050
     const p50 = parseFloat(document.getElementById('p0050').value) || 0;
     const w50 = parseFloat(document.getElementById('w0050').value) / 100;
-    document.getElementById('res0050').innerText = (p50 * (1 + ratio * w50)).toFixed(2);
+    document.getElementById('res0050').innerText = (p50 * (1 + changeRatio * w50)).toFixed(2);
 
+    // 0052
     const p52 = parseFloat(document.getElementById('p0052').value) || 0;
     const w52 = parseFloat(document.getElementById('w0052').value) / 100;
-    document.getElementById('res0052').innerText = (p52 * (1 + ratio * w52)).toFixed(2);
+    document.getElementById('res0052').innerText = (p52 * (1 + changeRatio * w52)).toFixed(2);
 }
 
-calc(); // 初始化
+// 初始化計算一次
+calc();
 </script>
 </body>
 </html>
