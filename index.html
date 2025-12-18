@@ -3,175 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台股權重動態試算工具</title>
+    <title>2025 最新版 - 台積電連動試算</title>
     <style>
-        :root { --primary: #1a73e8; --danger: #d93025; --bg: #f8f9fa; --success: #188038; }
-        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 480px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: var(--primary); margin-bottom: 15px; font-size: 22px; }
-        
-        .btn-update { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 15px; transition: 0.2s; }
-        .btn-update:active { transform: scale(0.98); background: #1557b0; }
-        
-        .status-bar { font-size: 12px; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; background: #e8f0fe; color: #1967d2; border: 1px solid #c2e7ff; line-height: 1.5; }
-        
-        .card { border: 1px solid #f1f3f4; border-radius: 15px; padding: 15px; margin-bottom: 15px; background: #fff; transition: 0.3s; }
-        .card:hover { border-color: #d2e3fc; }
-        .card h3 { margin: 0 0 12px 0; font-size: 16px; color: #202124; display: flex; align-items: center; }
-        .tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: auto; font-weight: normal; }
-        .tag-blue { background: #e8f0fe; color: #1967d2; }
-        .tag-green { background: #e6f4ea; color: var(--success); }
-
-        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
-        label { display: block; font-size: 11px; color: #5f6368; margin-bottom: 4px; }
-        input { width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 8px; box-sizing: border-box; font-size: 15px; outline: none; background: #fafafa; }
-        input:focus { background: #fff; border-color: var(--primary); }
-
-        .result-box { text-align: right; border-top: 1px dashed #eee; margin-top: 10px; padding-top: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .result-val { font-size: 20px; font-weight: bold; color: var(--danger); }
-        .result-label { font-size: 12px; color: #70757a; }
+        :root { --primary: #1a73e8; --warn: #f39c12; --danger: #d93025; }
+        body { font-family: "PingFang TC", sans-serif; background: #f0f2f5; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 480px; background: white; padding: 25px; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: var(--primary); margin-bottom: 10px; }
+        .update-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-bottom: 15px; }
+        .status-box { font-size: 12px; text-align: center; color: #666; margin-bottom: 20px; padding: 10px; background: #f8f9fa; border-radius: 10px; }
+        .card { border: 1px solid #eee; border-radius: 16px; padding: 15px; margin-bottom: 15px; position: relative; }
+        .card h3 { margin: 0 0 12px 0; font-size: 16px; display: flex; align-items: center; }
+        .weight-tag { font-size: 11px; background: #fff3e0; color: #e65100; padding: 2px 8px; border-radius: 20px; margin-left: 10px; border: 1px solid #ffe0b2; }
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        label { font-size: 11px; color: #888; display: block; margin-bottom: 4px; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .result-area { margin-top: 10px; text-align: right; border-top: 1px dashed #eee; padding-top: 10px; }
+        .target-price { color: var(--danger); font-size: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>指標權重即時試算</h2>
-    
-    <button class="btn-update" onclick="fetchAllData()">🔄 更新最新股價與權重</button>
-    <div id="status" class="status-bar">就緒。點擊按鈕同步證交所數據。</div>
+    <h2>台積電領先指標</h2>
+    <button class="update-btn" onclick="syncAll()">🔄 抓取 2025 最新即時報價</button>
+    <div id="status" class="status-box">目前使用 2025/12 預設權重值</div>
 
-    <div class="card" style="background: #fdfefe; border-left: 5px solid #ff9800;">
-        <h3>2330 台積電 <span class="tag tag-blue">核心指標</span></h3>
-        <div class="input-row">
-            <div>
-                <label>目前現價</label>
-                <input type="number" id="tsmc_p" value="1000" oninput="calculate()">
-            </div>
-            <div>
-                <label>預計變動 (元)</label>
-                <input type="number" id="tsmc_change" value="10" oninput="calculate()">
-            </div>
+    <div class="card" style="border-left: 5px solid var(--warn);">
+        <h3>2330 台積電</h3>
+        <div class="input-grid">
+            <div><label>現價</label><input type="number" id="tsmc_p" value="1050" oninput="calc()"></div>
+            <div><label>預計變動</label><input type="number" id="tsmc_chg" value="10" oninput="calc()"></div>
         </div>
     </div>
 
     <div class="card">
-        <h3>0050 元大台灣 50 <span id="w_date_0050" class="tag tag-blue">權重載入中</span></h3>
-        <div class="input-row">
-            <div>
-                <label>現價</label>
-                <input type="number" id="p0050" value="190" oninput="calculate()">
-            </div>
-            <div>
-                <label>台積電權重 (%)</label>
-                <input type="number" id="w0050" value="56.5" step="0.01" oninput="calculate()">
-            </div>
+        <h3>0050 元大台灣50 <span class="weight-tag" id="w0050_tag">權重: 61.5%</span></h3>
+        <div class="input-grid">
+            <div><label>現價</label><input type="number" id="p0050" value="200" oninput="calc()"></div>
+            <div><label>台積電權重%</label><input type="number" id="w0050" value="61.5" step="0.1" oninput="calc()"></div>
         </div>
-        <div class="result-box">
-            <span class="result-label">預估目標價</span>
-            <span id="res0050" class="result-val">--</span>
-        </div>
+        <div class="result-area">預估目標：<span id="res0050" class="target-price">--</span></div>
     </div>
 
     <div class="card">
-        <h3>0052 富邦科技 <span id="w_date_0052" class="tag tag-green">權重載入中</span></h3>
-        <div class="input-row">
-            <div>
-                <label>現價 (1:5 分割後)</label>
-                <input type="number" id="p0052" value="45" oninput="calculate()">
-            </div>
-            <div>
-                <label>台積電權重 (%)</label>
-                <input type="number" id="w0052" value="62.3" step="0.01" oninput="calculate()">
-            </div>
+        <h3>0052 富邦科技 <span class="weight-tag" id="w0052_tag">權重: 69.3%</span></h3>
+        <div class="input-grid">
+            <div><label>現價 (1:5分割後)</label><input type="number" id="p0052" value="35.5" oninput="calc()"></div>
+            <div><label>台積電權重%</label><input type="number" id="w0052" value="69.3" step="0.1" oninput="calc()"></div>
         </div>
-        <div class="result-box">
-            <span class="result-label">預估目標價</span>
-            <span id="res0052" class="result-val">--</span>
-        </div>
+        <div class="result-area">預估目標：<span id="res0052" class="target-price">--</span></div>
     </div>
 </div>
 
 <script>
-// API 基礎日期 (抓最近一個月)
-const getPastDate = (days) => new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
-
-// 抓取價格
-async function fetchPrice(id) {
-    try {
-        const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${id}&start_date=${getPastDate(7)}`;
-        const res = await fetch(url);
-        const json = await res.json();
-        return (json.data && json.data.length > 0) ? json.data[json.data.length - 1].close : null;
-    } catch (e) { return null; }
-}
-
-// 抓取 ETF 內台積電的最新權重
-async function fetchTsmcWeight(etfId, inputId, dateTagId) {
-    try {
-        const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockHolding&data_id=${etfId}&start_date=${getPastDate(45)}`;
-        const res = await fetch(url);
-        const json = await res.json();
-        if (json.data && json.data.length > 0) {
-            // 找出台積電 (2330) 的那一筆
-            const tsmcHolding = json.data.filter(item => item.stock_id === "2330").pop();
-            if (tsmcHolding) {
-                document.getElementById(inputId).value = tsmcHolding.holding_percentage;
-                document.getElementById(dateTagId).innerText = "權重日期: " + tsmcHolding.date;
-                return true;
-            }
-        }
-        return false;
-    } catch (e) { return false; }
-}
-
-async function fetchAllData() {
+async function syncAll() {
     const status = document.getElementById('status');
-    status.innerText = "⏳ 正在同步證交所股價與 ETF 權重...";
+    status.innerText = "⏳ 正在獲取最新數據...";
     
-    // 同步抓取價格
-    const [p2330, p0050, p0052] = await Promise.all([
-        fetchPrice('2330'),
-        fetchPrice('0050'),
-        fetchPrice('0052')
-    ]);
+    try {
+        // 抓取價格 (使用 API)
+        const getP = async (id) => {
+            const r = await fetch(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${id}&start_date=2025-12-10`);
+            const j = await r.json();
+            return j.data.length ? j.data[j.data.length-1].close : null;
+        };
 
-    if (p2330) document.getElementById('tsmc_p').value = p2330;
-    if (p0050) document.getElementById('p0050').value = p0050;
-    if (p0052) {
-        // 0052 分割自動修正
-        let correctedP52 = p0052 > 100 ? (p0052 / 5).toFixed(2) : p0052;
-        document.getElementById('p0052').value = correctedP52;
+        const [pTSMC, p50, p52] = await Promise.all([getP('2330'), getP('0050'), getP('0052')]);
+
+        if (pTSMC) document.getElementById('tsmc_p').value = pTSMC;
+        if (p50) document.getElementById('p0050').value = p50;
+        if (p52) document.getElementById('p0052').value = (p52 > 100 ? p52/5 : p52).toFixed(2);
+
+        // 嘗試抓取權重 (若 API 回傳太舊，則維持預設高權重)
+        const getW = async (id) => {
+            const r = await fetch(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockHolding&data_id=${id}&start_date=2025-11-01`);
+            const j = await r.json();
+            const h = j.data.filter(x => x.stock_id === "2330").pop();
+            return h ? h.holding_percentage : null;
+        };
+
+        const [w50, w52] = await Promise.all([getW('0050'), getW('0052')]);
+        
+        // 只有當抓到的權重高於現有值時才更新 (避免抓到過時的低權重資料)
+        if (w50 && w50 > 50) {
+            document.getElementById('w0050').value = w50;
+            document.getElementById('w0050_tag').innerText = `權重: ${w50}% (API)`;
+        }
+        if (w52 && w52 > 60) {
+            document.getElementById('w0052').value = w52;
+            document.getElementById('w0052_tag').innerText = `權重: ${w52}% (API)`;
+        }
+
+        status.innerText = "✅ 數據同步完成 (" + new Date().toLocaleTimeString() + ")";
+        calc();
+    } catch(e) {
+        status.innerText = "❌ 網路異常，請手動輸入";
     }
-
-    // 同步抓取權重
-    await Promise.all([
-        fetchTsmcWeight('0050', 'w0050', 'w_date_0050'),
-        fetchTsmcWeight('0052', 'w0052', 'w_date_0052')
-    ]);
-
-    status.innerText = "✅ 全數更新完成 (" + new Date().toLocaleTimeString() + ")\n權重依投信最新公告為準";
-    calculate();
 }
 
-function calculate() {
-    const tsmc = parseFloat(document.getElementById('tsmc_p').value) || 1;
-    const change = parseFloat(document.getElementById('tsmc_change').value) || 0;
-    const ratio = change / tsmc;
+function calc() {
+    const t = parseFloat(document.getElementById('tsmc_p').value) || 1;
+    const c = parseFloat(document.getElementById('tsmc_chg').value) || 0;
+    const ratio = c / t;
 
-    // 0050
     const p50 = parseFloat(document.getElementById('p0050').value) || 0;
     const w50 = parseFloat(document.getElementById('w0050').value) / 100;
     document.getElementById('res0050').innerText = (p50 * (1 + ratio * w50)).toFixed(2);
 
-    // 0052
     const p52 = parseFloat(document.getElementById('p0052').value) || 0;
     const w52 = parseFloat(document.getElementById('w0052').value) / 100;
     document.getElementById('res0052').innerText = (p52 * (1 + ratio * w52)).toFixed(2);
 }
 
-// 初始執行
-calculate();
+calc(); // 初始化
 </script>
-
 </body>
 </html>
